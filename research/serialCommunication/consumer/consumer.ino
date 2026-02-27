@@ -1,4 +1,3 @@
-#include <ArduinoJson.h>
 #include <MessageLib.h>
 
 unsigned long now = 0;
