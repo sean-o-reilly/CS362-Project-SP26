@@ -89,7 +89,7 @@ namespace pgc
     namespace // slave event handlers
     {
         bool slaveResponseReady = false;
-        bool slaveCommandRecv = false;
+        bool slaveCommandShouldRun = false;
 
         void onSlaveCommandRecv(int bytesRecv) { // called when master sends slave a command to execute
             if (bytesRecv <= 0)
@@ -100,7 +100,7 @@ namespace pgc
                 byte command = Wire.read();
 
                 if (command == RUN_COMMAND) {
-                    slaveCommandRecv = true;
+                    slaveCommandShouldRun = true;
                 }
             }
         }
@@ -118,8 +118,8 @@ namespace pgc
 
     void runSlaveCommand(void (*func)())
     {
-        if (slaveCommandRecv) {
-            slaveCommandRecv = false;
+        if (slaveCommandShouldRun) {
+            slaveCommandShouldRun = false;
             func();
             slaveResponseReady = true;
         }
