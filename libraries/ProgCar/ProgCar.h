@@ -1,11 +1,9 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
 #include <Wire.h>
 
 namespace pgc
 {
     constexpr int BAUD_RATE = 9600;
-    constexpr int MAX_WIRE_BYTES = 32;
 
     constexpr int A1_ADDRESS = 8;
     constexpr int A2_ADDRESS = 9;
@@ -16,6 +14,7 @@ namespace pgc
     constexpr int MESSAGE_SIZE = 4;
     byte slaveResponseBuffer[MESSAGE_SIZE];
 
+    /* Protocol response codes */
     constexpr byte RUN_COMMAND = 1;
     constexpr byte WORK_DONE = 0xEE;
     constexpr byte NOT_READY = 0xFF;
@@ -40,44 +39,23 @@ namespace pgc
         HIGH_SPEED
     };
 
-    namespace
-    {
-        const char* gasField = "g";
-        const char* steerField = "st";
-        const char* speedField = "sp";
-    }
-
     struct alignas(4) Move
     {
         Gas gas;
         SteerDir steer;
         Speed speed;
-
-        JsonDocument ToJson() const
-        {
-            JsonDocument json;
-            json[gasField] = static_cast<byte>(gas);
-            json[steerField] = static_cast<byte>(steer);
-            json[speedField] = static_cast<byte>(speed);
-            
-            return json;
-        }
     };
 
-    void initAM()
-    {
-        Wire.begin();
-        Serial.begin(BAUD_RATE);
-    }
-
-    void reportMove(const Move& move) // A3 -> AM
+    /* Endpoint: Send move data to master */
+    void reportMove(const Move& move)
     {
         slaveResponseBuffer[0] = static_cast<byte>(move.gas);
         slaveResponseBuffer[1] = static_cast<byte>(move.steer);
         slaveResponseBuffer[2] = static_cast<byte>(move.speed);
-        slaveResponseBuffer[3] = 0;
+        slaveResponseBuffer[3] = 0; // junk byte
     }
 
+    /* Endpoint: Tell master there is nothing left for slave to do */
     void reportDone()
     {
         for (int i = 0; i < MESSAGE_SIZE; ++i)
@@ -86,16 +64,17 @@ namespace pgc
         }
     }
 
-    namespace // slave event handlers
+    namespace // Slave event handlers
     {
         bool slaveResponseReady = false;
         bool slaveCommandShouldRun = false;
 
-        void onSlaveCommandRecv(int bytesRecv) { // called when master sends slave a command to execute
+        /* Called when master sends slave a command to execute */
+        void onSlaveCommandRecv(int bytesRecv) {
             if (bytesRecv <= 0)
                 return;
 
-            if (!slaveResponseReady) // only carry out command if move isn't already ready
+            if (!slaveResponseReady) // Only carry out command if move isn't already ready
             {
                 byte command = Wire.read();
 
@@ -105,7 +84,8 @@ namespace pgc
             }
         }
 
-        void onSlaveResponseRequested() { // called when master requests response from slave
+        /* Called when master requests a response from slave */
+        void onSlaveResponseRequested() {
             if (slaveResponseReady) {
                 Wire.write(slaveResponseBuffer, sizeof(slaveResponseBuffer));
                 slaveResponseReady = false;
@@ -116,6 +96,7 @@ namespace pgc
         }
     }
 
+    /* Will call func if master has requested slave to run */
     void runSlaveCommand(void (*func)())
     {
         if (slaveCommandShouldRun) {
@@ -123,6 +104,12 @@ namespace pgc
             func();
             slaveResponseReady = true;
         }
+    }
+
+    void initAM()
+    {
+        Wire.begin();
+        Serial.begin(BAUD_RATE);
     }
 
     void initSlave(const int address)

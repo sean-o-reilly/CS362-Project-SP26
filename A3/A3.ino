@@ -9,7 +9,7 @@ void setup() {
 void getMove() {
   static int moves = 0;
 
-  for (int i = 0; i < 5; ++i)  // do work (get one move from user)
+  for (int i = 0; i < 5; ++i)  // Placeholder for doing work
   {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     delay(250);
