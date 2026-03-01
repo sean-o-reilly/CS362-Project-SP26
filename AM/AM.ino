@@ -45,7 +45,7 @@ void getMoveFromA3(Move moves[], int& movesRecv, bool& done) {
       if (firstByte != NOT_READY) {
         response[0] = firstByte;
 
-        for (int i = 1; i < 4; ++i) {
+        for (int i = 1; i < MESSAGE_SIZE; ++i) {
           response[i] = Wire.read();
         }
 
@@ -63,7 +63,7 @@ void getMoveFromA3(Move moves[], int& movesRecv, bool& done) {
   } else {
 
     Serial.print("Move received: ");
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < MESSAGE_SIZE; ++i) {
       Serial.print(response[i]);
     }
 
