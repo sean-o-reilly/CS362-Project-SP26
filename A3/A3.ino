@@ -16,10 +16,10 @@ void getMove() {
   }
 
   if (moves < MAX_MOVES) {
-    reportMove(Move{ .gas = Gas::FORWARD, .steer = SteerDir::STRAIGHT, .speed = Speed::LOW_SPEED });
+    reportToMaster(Move{ .gas = Gas::FORWARD, .steer = SteerDir::STRAIGHT, .speed = Speed::LOW_SPEED });
     ++moves;
   } else {
-    reportDone();
+    reportToMaster(pgc::WORK_DONE);
     moves = 0;
   }
 }

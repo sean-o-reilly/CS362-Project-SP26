@@ -45,9 +45,8 @@ namespace pgc
         SteerDir steer;
         Speed speed;
     };
-
-    /* Endpoint: Send move data to master */
-    void reportMove(const Move& move)
+    
+    void reportToMaster(const Move& move)
     {
         slaveResponseBuffer[0] = static_cast<byte>(move.gas);
         slaveResponseBuffer[1] = static_cast<byte>(move.steer);
@@ -55,12 +54,11 @@ namespace pgc
         slaveResponseBuffer[3] = 0; // junk byte
     }
 
-    /* Endpoint: Tell master there is nothing left for slave to do */
-    void reportDone()
+    void reportToMaster(const byte status)
     {
         for (int i = 0; i < MESSAGE_SIZE; ++i)
         {
-            slaveResponseBuffer[i] = WORK_DONE;
+            slaveResponseBuffer[i] = status;
         }
     }
 
