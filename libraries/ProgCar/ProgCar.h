@@ -18,6 +18,7 @@ namespace pgc
     constexpr byte RUN_COMMAND = 1;
     constexpr byte WORK_DONE = 0xEE;
     constexpr byte NOT_READY = 0xFF;
+    constexpr byte NULL_RESPONSE = 0x00;
 
     enum class Gas : byte 
     {
@@ -99,6 +100,10 @@ namespace pgc
     {
         if (slaveCommandShouldRun) {
             slaveCommandShouldRun = false;
+            for (int i = 0; i < MESSAGE_SIZE; ++i)
+            {
+                slaveResponseBuffer[i] = NULL_RESPONSE;
+            }
             func();
             slaveResponseReady = true;
         }
