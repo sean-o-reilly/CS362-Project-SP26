@@ -20,8 +20,12 @@ void setup() {
   initSlave(A3_ADDRESS);
   
   // Pushbutton setup
+  pinMode(execute_button_pin, INPUT_PULLUP);
+  pinMode(forward_button_pin, INPUT_PULLUP);
+  pinMode(backward_button_pin, INPUT_PULLUP);
   pinMode(left_button_pin, INPUT_PULLUP);
   pinMode(right_button_pin, INPUT_PULLUP);
+  pinMode(speed_button_pin, INPUT_PULLUP);
 
   // LCD setup
   lcd.begin(16, 2);
