@@ -35,7 +35,7 @@ Input state transitions (assuming max_moves is not accounted for):
   - b -> steer
   - l -> null
   - r -> null
-  - s -> gas
+  - s -> gas_1
   - e -> execute
 
 */
@@ -177,9 +177,19 @@ class A3 {
             currMove.gas = FORWARD;
             steer = 1;
 
+          } else if (this->backward.checkInput() == 1) {
+
+            currMove.gas = REVERSE;
+            steer = 1;
+
           } else if (this->execute.checkInput() == 1) {
-              
-            gas = 0;
+            
+            if (this->arrSize > 0) {
+
+              this->moveArray[this->arrSize] = currMove;
+              filling, gas = 0;
+
+            }
           
           }
 
@@ -187,15 +197,37 @@ class A3 {
 
             if (this->forward.checkInput() == 1) {
 
-              this->moveArray[this->arrSize] = currMove;
-              this->arrSize++;
+              if (this->arrSize < 10) {
 
-              if (this->arrSize == 10) gas, steer = 0;
+                this->moveArray[this->arrSize] = currMove;
+                this->arrSize++;
+
+                currMove.gas = FORWARD;
+
+              }
+
+            } else if (this->backward.checkInput() == 1) {
+
+              if (this->arrSize < 10) {
+
+                this->moveArray[this->arrSize] = currMove;
+                this->arrSize++;
+
+                currMove.gas = BACKWARD;
+
+              }
 
             } else if (this->left.checkInput() == 1) {
 
               currMove.steer = LEFT;
               speed = 1;
+
+            } else if (this->execute.checkInput() == 1) {
+
+                this->moveArray[this->arrSize] = currMove;
+                this->arrSize++;
+
+                filling, gas, steer = 0;
 
             }
 
@@ -227,16 +259,19 @@ class A3 {
 
                 }
 
+              } else if (this->execute.checkInput() == 1) {
+
+                this->moveArray[this->arrSize] = currMove;
+                this->arrSize++;
+
+                filling, gas, steer, speed = 0;
+
               }
 
             }
 
           }
 
-        }
-
-        if (this->arrSize == 10) {
-          filling = 0;
         }
 
       }
