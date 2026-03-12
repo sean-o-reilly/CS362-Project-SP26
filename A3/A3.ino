@@ -29,6 +29,7 @@ class A3 {
       Returns 1 if button is pressed, else returns 0.
       */
       int getInput() {
+        int res = 0;
         int reading = digitalRead(this->pinNumber);
 
         if (reading != this->prevState) {
@@ -39,13 +40,13 @@ class A3 {
           if (reading != this->currState) {
             this->currState = reading;
             if (this->currState == HIGH) {
-              return 1;
+              res = 1;
             }
           }
         }
 
         last_left_button_state = reading;
-        return 0;
+        return res;
       }
 
   }
@@ -55,14 +56,22 @@ class A3 {
     LiquidCrystal lcd;
 
   public:
+
     A3(int execute_pin, 
     int forward_pin, 
     int backward_pin, 
     int left_pin, 
     int right_pin,
     int speed_pin) {
-      
+      this->execute = Button(execute_pin);
+      this->forward = Button(forward_pin);
+      this->backward = Button(backward_pin);
+      this->left = Button(left_pin);
+      this->right = Button(right_pin);
+      this->speed = Button(speed_pin);
     }
+
+    
 
 };
 
