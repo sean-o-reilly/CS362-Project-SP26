@@ -2,6 +2,44 @@
 
 #include "ProgCar.h"
 
+/*
+
+Input state transitions (assuming max_moves is not accounted for):
+
+- gas_0: # collecting gas with no existing moves
+  - f -> steer
+  - b -> steer
+  - l -> null
+  - r -> null
+  - s -> null
+  - e -> null
+
+- gas_1: # collecting gas with an existing move
+  - f -> steer
+  - b -> steer
+  - l -> null
+  - r -> null
+  - s -> null
+  - e -> execute
+
+- steer:
+  - f -> steer
+  - b -> steer
+  - l -> speed
+  - r -> speed
+  - s -> null
+  - e -> execute
+
+- speed:
+  - f -> steer
+  - b -> steer
+  - l -> null
+  - r -> null
+  - s -> gas
+  - e -> execute
+
+*/
+
 #define DEBOUNCE_DELAY 50
 
 using namespace pgc;
@@ -11,6 +49,7 @@ class A3 {
   class Button {
 
     private:
+
       const unsigned int pinNumber;
       unsigned int currState, prevState;
       unsigned long lastDebounce;
@@ -28,7 +67,7 @@ class A3 {
       /*
       Returns 1 if button is pressed, else returns 0.
       */
-      int getInput() {
+      int checkInput() {
         int res = 0;
         int reading = digitalRead(this->pinNumber);
 
@@ -51,9 +90,50 @@ class A3 {
 
   }
 
+  class LCD {
+
+    private:
+      //unsigned const int rs, en, d4, d5, d6, d7;
+      unsigned int cursorRow, cursorCol;
+      String topText, bottomText;
+      LiquidCrystal lcd;
+    
+    public:
+      LCD(int rs, en, d4, d5, d6, d7) {
+        this->lcd(rs, en, d4, d5, d6, d7)
+        this->cursorRow = 0;
+        this->cursorCol = 0;
+        this->topText = "";
+        this->bottomText = "";
+      }
+
+      void setTopText(String newText) {
+        this->topText = newText;
+      }
+
+      void setBottomText(String newText) {
+        this->bottomText = newText;
+      }
+
+      void appendBottomText(String newText) {
+        this->buttomText += newText;
+      }
+
+      void display() {
+        this->lcd.setCursor(0, 0);
+        this->lcd.display(this->topText);
+        this->lcd.setCursor(1, 0);
+        this->lcd.display(this->bottomText);
+      }
+
+  }
+
   private:
+
     Button execute, forward, backward, left, right, speed;
-    LiquidCrystal lcd;
+    LCD lcd;
+    Move moveArray[MAX_MOVES];
+    int arrSize;
 
   public:
 
@@ -62,16 +142,106 @@ class A3 {
     int backward_pin, 
     int left_pin, 
     int right_pin,
-    int speed_pin) {
-      this->execute = Button(execute_pin);
-      this->forward = Button(forward_pin);
-      this->backward = Button(backward_pin);
-      this->left = Button(left_pin);
-      this->right = Button(right_pin);
-      this->speed = Button(speed_pin);
+    int speed_pin,
+    int rs, int en,
+    int d4, int d5,
+    int d6, int d7,) {
+      this->execute(execute_pin);
+      this->forward(forward_pin);
+      this->backward(backward_pin);
+      this->left(left_pin);
+      this->right(right_pin);
+      this->speed(speed_pin);
+
+      this->lcd(rs, en, d4, d5, d6, d7);
+
+      this->arrSize = 0;
     }
 
-    
+    void fillMoveArray() {
+
+      int gas, steer, speed = 0;
+
+      int filling = 1;
+
+      while (filling) {
+
+        Move currMove = {FORWARD, STRAIGHT, MEDIUM_SPEED};
+
+        gas = 1;
+
+        while (gas) {
+
+          if (this->forward.checkInput() == 1) {
+
+            currMove.gas = FORWARD;
+            steer = 1;
+
+          } else if (this->execute.checkInput() == 1) {
+              
+            gas = 0;
+          
+          }
+
+          while (steer) {
+
+            if (this->forward.checkInput() == 1) {
+
+              this->moveArray[this->arrSize] = currMove;
+              this->arrSize++;
+
+              if (this->arrSize == 10) gas, steer = 0;
+
+            } else if (this->left.checkInput() == 1) {
+
+              currMove.steer = LEFT;
+              speed = 1;
+
+            }
+
+            while (speed) {
+
+              if (this->forward.checkInput() == 1) {
+
+                this->moveArray[this->arrSize] = currMove;
+                this->arrSize++;
+                speed = 0;
+
+                if (this->arrSize == 10) gas, steer = 0;
+
+              } else if (this->speed.checkInput() == 1) {
+
+                switch (currMove.speed) {
+
+                  case LOW_SPEED:
+                    currMove.speed = MEDIUM_SPEED;
+                    break;
+
+                  case MEDIUM_SPEED:
+                    currMove.speed = HIGH_SPEED;
+                    break;
+
+                  case HIGH_SPEED:
+                    currMove.speed = LOW_SPEED;
+                    break;
+
+                }
+
+              }
+
+            }
+
+          }
+
+        }
+
+        if (this->arrSize == 10) {
+          filling = 0;
+        }
+
+      }
+
+    }
 
 };
 
