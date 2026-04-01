@@ -49,6 +49,8 @@ namespace pgc
         SteerDir steer;
         Speed speed;
     };
+
+    static_assert(sizeof(Move) <= MESSAGE_SIZE);
     
     void reportToMaster(const Move& move)
     {
