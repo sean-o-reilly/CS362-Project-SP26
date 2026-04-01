@@ -14,11 +14,14 @@ namespace pgc
     constexpr int MESSAGE_SIZE = 4;
     byte slaveResponseBuffer[MESSAGE_SIZE];
 
-    /* Protocol response codes */
-    constexpr byte RUN_COMMAND = 1;
-    constexpr byte WORK_DONE = 0xEE;
-    constexpr byte NOT_READY = 0xFF;
+    /*
+    Protocol send and response codes
+    Can be bitwise OR'd together
+    */
     constexpr byte NULL_RESPONSE = 0x00;
+    constexpr byte RUN_COMMAND = 0x01;
+    constexpr byte WORK_DONE = 0x02;
+    constexpr byte NOT_READY = 0x04;
 
     enum class Gas : byte 
     {
@@ -96,7 +99,7 @@ namespace pgc
     }
 
     /* Will call func if master has requested slave to run */
-    void runSlaveCommand(void (*func)())
+    void handleMasterRequest(void (*func)())
     {
         if (slaveCommandShouldRun) {
             slaveCommandShouldRun = false;
