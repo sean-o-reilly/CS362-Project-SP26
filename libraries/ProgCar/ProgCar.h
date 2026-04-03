@@ -12,12 +12,11 @@ namespace pgc
     constexpr int MAX_MOVES = 10;
 
     constexpr int MESSAGE_SIZE = 4;
+
+    byte masterCommandBuffer[MESSAGE_SIZE];
     byte slaveResponseBuffer[MESSAGE_SIZE];
 
-    /*
-    Protocol send and response codes
-    Can be bitwise OR'd together
-    */
+    /* Protocol send and response codes */
     constexpr byte NULL_RESPONSE = 0x00;
     constexpr byte RUN_COMMAND = 0x01;
     constexpr byte WORK_DONE = 0x02;
@@ -73,16 +72,19 @@ namespace pgc
         bool slaveResponseReady = false;
         bool slaveCommandShouldRun = false;
 
-        /* Called when master sends slave a command to execute */
+        /* Called when slave receives a command from master */
         void onSlaveCommandRecv(int bytesRecv) {
-            if (bytesRecv <= 0)
+            if (bytesRecv < MESSAGE_SIZE)
                 return;
 
-            if (!slaveResponseReady) // Only carry out command if move isn't already ready
+            if (!slaveResponseReady) // Only carry out command if a response isn't currently in progress
             {
-                byte command = Wire.read();
+                masterCommandBuffer[0] = Wire.read();
+                masterCommandBuffer[1] = Wire.read();
+                masterCommandBuffer[2] = Wire.read();
+                masterCommandBuffer[3] = Wire.read();
 
-                if (command == RUN_COMMAND) {
+                if (masterCommandBuffer[0] == RUN_COMMAND) {
                     slaveCommandShouldRun = true;
                 }
             }
@@ -91,25 +93,49 @@ namespace pgc
         /* Called when master requests a response from slave */
         void onSlaveResponseRequested() {
             if (slaveResponseReady) {
-                Wire.write(slaveResponseBuffer, sizeof(slaveResponseBuffer));
+                Wire.write(slaveResponseBuffer, MESSAGE_SIZE);
                 slaveResponseReady = false;
             } else {
                 byte notReady[MESSAGE_SIZE] = {NOT_READY, NOT_READY, NOT_READY, NOT_READY};   
                 Wire.write(notReady, MESSAGE_SIZE);
             }
         }
-    }
 
-    /* Will call func if master has requested slave to run */
-    void handleMasterRequest(void (*func)())
-    {
-        if (slaveCommandShouldRun) {
+        void clearSlaveResponse() {
             slaveCommandShouldRun = false;
             for (int i = 0; i < MESSAGE_SIZE; ++i)
             {
                 slaveResponseBuffer[i] = NULL_RESPONSE;
             }
+        }
+    }
+
+    void handleMovesRequest(void (*func)())
+    {
+        if (slaveCommandShouldRun) {
+            clearSlaveResponse();
             func();
+            slaveResponseReady = true;
+        }
+    }
+
+    void handleSteerCommand(void (*func)(SteerDir steerDir))
+    {
+        if (slaveCommandShouldRun) {
+            clearSlaveResponse();
+            SteerDir steerDir = static_cast<SteerDir>(masterCommandBuffer[1]);
+            func(steerDir);
+            slaveResponseReady = true;
+        }
+    }
+
+    void handleDriveCommand(void (*func)(Gas gas, Speed speed))
+    {
+        if (slaveCommandShouldRun) {
+            clearSlaveResponse();
+            Gas gas = static_cast<Gas>(masterCommandBuffer[1]);
+            Speed speed = static_cast<Speed>(masterCommandBuffer[2]);
+            func(gas, speed);
             slaveResponseReady = true;
         }
     }

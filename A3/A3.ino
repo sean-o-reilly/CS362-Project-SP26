@@ -25,5 +25,5 @@ void getMove() {
 }
 
 void loop() {
-  handleMasterRequest(getMove);
+  handleMovesRequest(getMove);
 }
