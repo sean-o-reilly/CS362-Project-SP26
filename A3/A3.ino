@@ -67,6 +67,13 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 // time variables
 unsigned long curr_millis, prev_millis = 0;
 
+Gas gas_arr[2] = {FORWARD, REVERSE};
+int gas_pos = 0;
+SteerDir steer_arr[3] = {STRAIGHT, LEFT, RIGHT};
+int steer_pos = 0;
+Speed speed_arr[3] = {MEDIUM_SPEED, HIGH_SPEED, LOW_SPEED};
+int speed_pos = 0;
+
 // from ProgCar.h
     enum Gas
     {
@@ -95,12 +102,14 @@ unsigned long curr_millis, prev_millis = 0;
         Speed speed;
     };
 
-void print_move(struct Move move) {
+/*
+Prints current move in a slot machine style for simplicity.
+*/
+void print_slotMachine(struct Move* move) {
 
   lcd.setCursor(0, 0);
-  lcd.print("Move: ");
 
-  switch (move.gas) {
+  switch (move->gas) {
     case FORWARD:
       lcd.print("F");
       break;
@@ -111,7 +120,7 @@ void print_move(struct Move move) {
       break;
   };
 
-  switch (move.steer) {
+  switch (move->steer) {
     case LEFT:
       lcd.print("L,");
       break;
@@ -125,7 +134,7 @@ void print_move(struct Move move) {
       break;
   }
 
-  switch (move.speed) {
+  switch (move->speed) {
     case LOW_SPEED:
       lcd.print("(L)");
       break;
@@ -142,64 +151,39 @@ void print_move(struct Move move) {
 }
 
 /* 
-Main A3 do-work function. Will change the return type to int to signify early exit.
-
-Sean recommends making input like slot machine, where each button cycles the choice for gas, steer, speed respectively.
+Main A3 do-work function. Returns 1 to continue collecting moves, else returns 0 if user wants less than 10 moves.
 */
-struct Move a3_getMove() {
+int a3_getMove(Move* new_move) {
 
-  Move new_move;
+  *new_move = {gas_arr[gas_pos], steer_arr[steer_pos], speed_arr[speed_pos]};
 
-  //int reading = 1;
+  int reading = 1;
 
-  // get gas choice
-
-  //lcd.print("gas choice");
-
-  print_move(new_move);
-  lcd.setCursor(0, 1);
-  lcd.print("choose gas");
-
-  while (1) {
+  while (reading) {
 
     if (button_get_input(&drive) == 1) {
-      new_move.gas = FORWARD;
-      break;
+      // cycle gas
+      gas_pos = (gas_pos + 1) % 2;
+      new_move->gas = gas_arr[gas_pos];
     } else if (button_get_input(&reverse) == 1) {
-      new_move.gas = REVERSE;
-      break;
-    }
-
-  }
-
-  // get dir choice
-
-  //lcd.clear();
-  //lcd.print("speed choice");
-  print_move(new_move);
-  lcd.setCursor(0, 1);
-  lcd.print("choose steer");
-
-  while (1) {
-
-    if (button_get_input(&left) == 1) {
-      new_move.steer = LEFT;
-      break;
+      // cycle steer
+      steer_pos = (steer_pos + 1) % 3;
+      new_move->steer = steer_arr[steer_pos];
+    } else if (button_get_input(&left) == 1) {
+      // cycle speed
+      speed_pos = (speed_pos + 1) % 3;
+      new_move->speed = speed_arr[speed_pos];
     } else if (button_get_input(&right) == 1) {
-      new_move.steer = RIGHT;
-      break;
+      // leave to send current move
+      return 1;
     } else if (button_get_input(&execute) == 1) {
-      new_move.steer = STRAIGHT;
-      break;
+      // leave to send current move and report work done
+      return 0;
     }
 
+    print_slotMachine(new_move);
+
   }
-
-  // get speed choice
-  // currently missing 6th button, will skip for now.
-  new_move.speed = MEDIUM_SPEED;
-
-  return new_move;
 
 }
 
@@ -219,6 +203,7 @@ void setup() {
   lcd.setCursor(0, 0);
 }
 
+// from ProgCar.h
 /*
 void getMove() {
   static int moves_set = 0;
@@ -235,10 +220,16 @@ void getMove() {
 
 void loop() {
   //runSlaveCommand(getMove);
-  Move move = a3_getMove();
+  Move move;
   lcd.clear();
-  print_move(move);
-  lcd.setCursor(0, 1);
-  lcd.print("final move");
-  delay(5000);
+  if (a3_getMove(&move) == 1) {
+    lcd.setCursor(0, 1);
+    lcd.print("sending to AM");
+    delay(3000);
+  } else {
+    lcd.setCursor(0, 1);
+    lcd.print("work done");
+    delay(3000);
+    // report(WORK_DONE);
+  }
 }
