@@ -1,307 +1,244 @@
 #include <LiquidCrystal.h>
 
-#include "ProgCar.h"
+//#include "ProgCar.h"
 
-/*
-
-Input state transitions (assuming max_moves is not accounted for):
-
-- gas_0: # collecting gas with no existing moves
-  - f -> steer
-  - b -> steer
-  - l -> null
-  - r -> null
-  - s -> null
-  - e -> null
-
-- gas_1: # collecting gas with an existing move
-  - f -> steer
-  - b -> steer
-  - l -> null
-  - r -> null
-  - s -> null
-  - e -> execute
-
-- steer:
-  - f -> steer
-  - b -> steer
-  - l -> speed
-  - r -> speed
-  - s -> null
-  - e -> execute
-
-- speed:
-  - f -> steer
-  - b -> steer
-  - l -> null
-  - r -> null
-  - s -> gas_1
-  - e -> execute
-
-*/
+#define DRIVE_PIN 7
+#define REVERSE_PIN 8
+#define LEFT_PIN 9
+#define RIGHT_PIN 10
+//#define SPEED_PIN 10
+#define EXECUTE_PIN 13
 
 #define DEBOUNCE_DELAY 50
 
-using namespace pgc;
+//using namespace pgc;
 
-class A3 {
+// Button class and set up
+struct button {
 
-  class Button {
+  int pin;
+  int curr_state;
+  int last_state;
+  int last_debounce;
 
-    private:
-
-      const unsigned int pinNumber;
-      unsigned int currState, prevState;
-      unsigned long lastDebounce;
-
-    public:
-
-      Button(int pinNumber) {
-        this->pinNumber = pinNumber;
-        this->currState = LOW;
-        this->prevState = LOW;
-        this->lastDebounce = 0;
-        pinMode(pin, INPUT_PULLUP);
-      }
-
-      /*
-      Returns 1 if button is pressed, else returns 0.
-      */
-      int checkInput() {
-        int res = 0;
-        int reading = digitalRead(this->pinNumber);
-
-        if (reading != this->prevState) {
-          lastDebounce = millis();
-        }
-
-        if ((millis() - this->lastDebounce) > DEBOUNCE_DELAY) {
-          if (reading != this->currState) {
-            this->currState = reading;
-            if (this->currState == HIGH) {
-              res = 1;
-            }
-          }
-        }
-
-        last_left_button_state = reading;
-        return res;
-      }
-
+  button(int pin, int curr_state, int last_state, int last_debounce) {
+    this->pin = pin;
+    this->curr_state = curr_state;
+    this->last_state = last_state;
+    this->last_debounce = last_debounce;
   }
-
-  class LCD {
-
-    private:
-      //unsigned const int rs, en, d4, d5, d6, d7;
-      unsigned int cursorRow, cursorCol;
-      String topText, bottomText;
-      LiquidCrystal lcd;
-    
-    public:
-      LCD(int rs, en, d4, d5, d6, d7) {
-        this->lcd(rs, en, d4, d5, d6, d7)
-        this->cursorRow = 0;
-        this->cursorCol = 0;
-        this->topText = "";
-        this->bottomText = "";
-      }
-
-      void setTopText(String newText) {
-        this->topText = newText;
-      }
-
-      void setBottomText(String newText) {
-        this->bottomText = newText;
-      }
-
-      void appendBottomText(String newText) {
-        this->buttomText += newText;
-      }
-
-      void display() {
-        this->lcd.setCursor(0, 0);
-        this->lcd.display(this->topText);
-        this->lcd.setCursor(1, 0);
-        this->lcd.display(this->bottomText);
-      }
-
-  }
-
-  private:
-
-    Button execute, forward, backward, left, right, speed;
-    LCD lcd;
-    Move moveArray[MAX_MOVES];
-    int arrSize;
-
-  public:
-
-    A3(int execute_pin, 
-    int forward_pin, 
-    int backward_pin, 
-    int left_pin, 
-    int right_pin,
-    int speed_pin,
-    int rs, int en,
-    int d4, int d5,
-    int d6, int d7,) {
-      this->execute(execute_pin);
-      this->forward(forward_pin);
-      this->backward(backward_pin);
-      this->left(left_pin);
-      this->right(right_pin);
-      this->speed(speed_pin);
-
-      this->lcd(rs, en, d4, d5, d6, d7);
-
-      this->arrSize = 0;
-    }
-
-    void fillMoveArray() {
-
-      int gas, steer, speed = 0;
-
-      int filling = 1;
-
-      while (filling) {
-
-        Move currMove = {FORWARD, STRAIGHT, MEDIUM_SPEED};
-
-        gas = 1;
-
-        while (gas) {
-
-          if (this->forward.checkInput() == 1) {
-
-            currMove.gas = FORWARD;
-            steer = 1;
-
-          } else if (this->backward.checkInput() == 1) {
-
-            currMove.gas = REVERSE;
-            steer = 1;
-
-          } else if (this->execute.checkInput() == 1) {
-            
-            if (this->arrSize > 0) {
-
-              this->moveArray[this->arrSize] = currMove;
-              filling, gas = 0;
-
-            }
-          
-          }
-
-          while (steer) {
-
-            if (this->forward.checkInput() == 1) {
-
-              if (this->arrSize < 10) {
-
-                this->moveArray[this->arrSize] = currMove;
-                this->arrSize++;
-
-                currMove.gas = FORWARD;
-
-              }
-
-            } else if (this->backward.checkInput() == 1) {
-
-              if (this->arrSize < 10) {
-
-                this->moveArray[this->arrSize] = currMove;
-                this->arrSize++;
-
-                currMove.gas = BACKWARD;
-
-              }
-
-            } else if (this->left.checkInput() == 1) {
-
-              currMove.steer = LEFT;
-              speed = 1;
-
-            } else if (this->execute.checkInput() == 1) {
-
-                this->moveArray[this->arrSize] = currMove;
-                this->arrSize++;
-
-                filling, gas, steer = 0;
-
-            }
-
-            while (speed) {
-
-              if (this->forward.checkInput() == 1) {
-
-                this->moveArray[this->arrSize] = currMove;
-                this->arrSize++;
-                speed = 0;
-
-                if (this->arrSize == 10) gas, steer = 0;
-
-              } else if (this->speed.checkInput() == 1) {
-
-                switch (currMove.speed) {
-
-                  case LOW_SPEED:
-                    currMove.speed = MEDIUM_SPEED;
-                    break;
-
-                  case MEDIUM_SPEED:
-                    currMove.speed = HIGH_SPEED;
-                    break;
-
-                  case HIGH_SPEED:
-                    currMove.speed = LOW_SPEED;
-                    break;
-
-                }
-
-              } else if (this->execute.checkInput() == 1) {
-
-                this->moveArray[this->arrSize] = currMove;
-                this->arrSize++;
-
-                filling, gas, steer, speed = 0;
-
-              }
-
-            }
-
-          }
-
-        }
-
-      }
-
-    }
 
 };
 
-void setup() {
-  initSlave(A3_ADDRESS);
-}
+int button_get_input(button* button) {
 
-void getMove() {
-  static int moves = 0;
+  int reading = digitalRead(button->pin);
 
-  for (int i = 0; i < 5; ++i)  // Placeholder for doing work
-  {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    delay(250);
+  if (reading != button->last_state) {
+    button->last_debounce = millis();
   }
 
-  if (moves < MAX_MOVES) {
-    reportToMaster(Move{ .gas = Gas::FORWARD, .steer = SteerDir::STRAIGHT, .speed = Speed::LOW_SPEED });
+  if ((millis() - button->last_debounce) > DEBOUNCE_DELAY) {
+    if (reading != button->curr_state) {
+      button->curr_state = reading;
+      if (button->curr_state == HIGH) {
+        button->last_state = reading;
+        return 1;
+      }
+    }
+  }
+
+  button->last_state = reading;
+  return 0;
+
+}
+
+button drive(DRIVE_PIN, HIGH, HIGH, 0);
+button reverse(REVERSE_PIN, HIGH, HIGH, 0);
+button left(LEFT_PIN, HIGH, HIGH, 0);
+button right(RIGHT_PIN, HIGH, HIGH, 0);
+//button speed(SPEED_PIN, HIGH, HIGH, 0);
+button execute(EXECUTE_PIN, HIGH, HIGH, 0);
+
+// LCD setup
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+// time variables
+unsigned long curr_millis, prev_millis = 0;
+
+// from ProgCar.h
+    enum Gas
+    {
+        FORWARD,
+        REVERSE
+    };
+
+    enum SteerDir
+    {
+        LEFT,
+        STRAIGHT,
+        RIGHT
+    };
+
+    enum Speed
+    {
+        LOW_SPEED,
+        MEDIUM_SPEED,
+        HIGH_SPEED
+    };
+
+    struct Move
+    {
+        Gas gas;
+        SteerDir steer;
+        Speed speed;
+    };
+
+void print_move(struct Move move) {
+
+  lcd.setCursor(0, 0);
+  lcd.print("Move: ");
+
+  switch (move.gas) {
+    case FORWARD:
+      lcd.print("F");
+      break;
+    case REVERSE:
+      lcd.print("B");
+      break;
+    default:
+      break;
+  };
+
+  switch (move.steer) {
+    case LEFT:
+      lcd.print("L,");
+      break;
+    case RIGHT:
+      lcd.print("R,");
+      break;
+    case STRAIGHT:
+      lcd.print("S,");
+      break;
+    default:
+      break;
+  }
+
+  switch (move.speed) {
+    case LOW_SPEED:
+      lcd.print("(L)");
+      break;
+    case MEDIUM_SPEED:
+      lcd.print("(M)");
+      break;
+    case HIGH_SPEED:
+      lcd.print("(H)");
+      break;
+    default:
+      break;
+  }
+
+}
+
+/* 
+Main A3 do-work function. Will change the return type to int to signify early exit.
+
+Sean recommends making input like slot machine, where each button cycles the choice for gas, steer, speed respectively.
+*/
+struct Move a3_getMove() {
+
+  Move new_move;
+
+  //int reading = 1;
+
+  // get gas choice
+
+  //lcd.print("gas choice");
+
+  print_move(new_move);
+  lcd.setCursor(0, 1);
+  lcd.print("choose gas");
+
+  while (1) {
+
+    if (button_get_input(&drive) == 1) {
+      new_move.gas = FORWARD;
+      break;
+    } else if (button_get_input(&reverse) == 1) {
+      new_move.gas = REVERSE;
+      break;
+    }
+
+  }
+
+  // get dir choice
+
+  //lcd.clear();
+  //lcd.print("speed choice");
+  print_move(new_move);
+  lcd.setCursor(0, 1);
+  lcd.print("choose steer");
+
+  while (1) {
+
+    if (button_get_input(&left) == 1) {
+      new_move.steer = LEFT;
+      break;
+    } else if (button_get_input(&right) == 1) {
+      new_move.steer = RIGHT;
+      break;
+    } else if (button_get_input(&execute) == 1) {
+      new_move.steer = STRAIGHT;
+      break;
+    }
+
+  }
+
+  // get speed choice
+  // currently missing 6th button, will skip for now.
+  new_move.speed = MEDIUM_SPEED;
+
+  return new_move;
+
+}
+
+void setup() {
+  //initSlave(A3_ADDRESS);
+  
+  // Pushbutton setup
+  pinMode(drive.pin, INPUT_PULLUP);
+  pinMode(reverse.pin, INPUT_PULLUP);
+  pinMode(left.pin, INPUT_PULLUP);
+  pinMode(right.pin, INPUT_PULLUP);
+  //pinMode(speed.pin, INPUT_PULLUP);
+  pinMode(execute.pin, INPUT_PULLUP);
+
+  // LCD setup
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+}
+
+/*
+void getMove() {
+  static int moves_set = 0;
+
+  if (moves_sent < MAX_MOVES) {
     ++moves;
   } else {
     reportToMaster(pgc::WORK_DONE);
     moves = 0;
   }
+
 }
+*/
 
 void loop() {
-  runSlaveCommand(getMove);
+  //runSlaveCommand(getMove);
+  Move move = a3_getMove();
+  lcd.clear();
+  print_move(move);
+  lcd.setCursor(0, 1);
+  lcd.print("final move");
+  delay(5000);
 }
