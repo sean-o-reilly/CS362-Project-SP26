@@ -6,14 +6,13 @@
 #define REVERSE_PIN 8
 #define LEFT_PIN 9
 #define RIGHT_PIN 10
-//#define SPEED_PIN 10
 #define EXECUTE_PIN 13
 
 #define DEBOUNCE_DELAY 50
 
 //using namespace pgc;
 
-// Button class and set up
+// Button class for holding pin, state, and debounce variables.
 struct button {
 
   int pin;
@@ -30,6 +29,7 @@ struct button {
 
 };
 
+// Returns 1 if button has been pressed, else returns 0.
 int button_get_input(button* button) {
 
   int reading = digitalRead(button->pin);
@@ -53,11 +53,11 @@ int button_get_input(button* button) {
 
 }
 
-button drive(DRIVE_PIN, HIGH, HIGH, 0);
-button reverse(REVERSE_PIN, HIGH, HIGH, 0);
-button left(LEFT_PIN, HIGH, HIGH, 0);
-button right(RIGHT_PIN, HIGH, HIGH, 0);
-//button speed(SPEED_PIN, HIGH, HIGH, 0);
+// button setup
+button gas(DRIVE_PIN, HIGH, HIGH, 0);
+button steer(REVERSE_PIN, HIGH, HIGH, 0);
+button speed(LEFT_PIN, HIGH, HIGH, 0);
+button send(RIGHT_PIN, HIGH, HIGH, 0);
 button execute(EXECUTE_PIN, HIGH, HIGH, 0);
 
 // LCD setup
@@ -66,13 +66,6 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // time variables
 unsigned long curr_millis, prev_millis = 0;
-
-Gas gas_arr[2] = {FORWARD, REVERSE};
-int gas_pos = 0;
-SteerDir steer_arr[3] = {STRAIGHT, LEFT, RIGHT};
-int steer_pos = 0;
-Speed speed_arr[3] = {MEDIUM_SPEED, HIGH_SPEED, LOW_SPEED};
-int speed_pos = 0;
 
 // from ProgCar.h
     enum Gas
@@ -102,12 +95,23 @@ int speed_pos = 0;
         Speed speed;
     };
 
+// array and position variables for cycling choices
+Gas gas_arr[2] = {FORWARD, REVERSE};
+int gas_pos = 0;
+SteerDir steer_arr[3] = {STRAIGHT, LEFT, RIGHT};
+int steer_pos = 0;
+Speed speed_arr[3] = {MEDIUM_SPEED, HIGH_SPEED, LOW_SPEED};
+int speed_pos = 0;
+
 /*
-Prints current move in a slot machine style for simplicity.
+Prints current move in a slot machine style on LCD.
+- Format -> G:F St:S Sp:M
 */
 void print_slotMachine(struct Move* move) {
 
   lcd.setCursor(0, 0);
+
+  lcd.print("G:");
 
   switch (move->gas) {
     case FORWARD:
@@ -120,29 +124,33 @@ void print_slotMachine(struct Move* move) {
       break;
   };
 
+  lcd.print(" St:");
+
   switch (move->steer) {
     case LEFT:
-      lcd.print("L,");
+      lcd.print("L");
       break;
     case RIGHT:
-      lcd.print("R,");
+      lcd.print("R");
       break;
     case STRAIGHT:
-      lcd.print("S,");
+      lcd.print("S");
       break;
     default:
       break;
   }
 
+  lcd.print(" Sp:");
+
   switch (move->speed) {
     case LOW_SPEED:
-      lcd.print("(L)");
+      lcd.print("L");
       break;
     case MEDIUM_SPEED:
-      lcd.print("(M)");
+      lcd.print("M");
       break;
     case HIGH_SPEED:
-      lcd.print("(H)");
+      lcd.print("H");
       break;
     default:
       break;
@@ -161,19 +169,19 @@ int a3_getMove(Move* new_move) {
 
   while (reading) {
 
-    if (button_get_input(&drive) == 1) {
+    if (button_get_input(&gas) == 1) {
       // cycle gas
       gas_pos = (gas_pos + 1) % 2;
       new_move->gas = gas_arr[gas_pos];
-    } else if (button_get_input(&reverse) == 1) {
+    } else if (button_get_input(&steer) == 1) {
       // cycle steer
       steer_pos = (steer_pos + 1) % 3;
       new_move->steer = steer_arr[steer_pos];
-    } else if (button_get_input(&left) == 1) {
+    } else if (button_get_input(&speed) == 1) {
       // cycle speed
       speed_pos = (speed_pos + 1) % 3;
       new_move->speed = speed_arr[speed_pos];
-    } else if (button_get_input(&right) == 1) {
+    } else if (button_get_input(&send) == 1) {
       // leave to send current move
       return 1;
     } else if (button_get_input(&execute) == 1) {
@@ -191,11 +199,10 @@ void setup() {
   //initSlave(A3_ADDRESS);
   
   // Pushbutton setup
-  pinMode(drive.pin, INPUT_PULLUP);
-  pinMode(reverse.pin, INPUT_PULLUP);
-  pinMode(left.pin, INPUT_PULLUP);
-  pinMode(right.pin, INPUT_PULLUP);
-  //pinMode(speed.pin, INPUT_PULLUP);
+  pinMode(gas.pin, INPUT_PULLUP);
+  pinMode(steer.pin, INPUT_PULLUP);
+  pinMode(speed.pin, INPUT_PULLUP);
+  pinMode(send.pin, INPUT_PULLUP);
   pinMode(execute.pin, INPUT_PULLUP);
 
   // LCD setup
@@ -223,10 +230,12 @@ void loop() {
   Move move;
   lcd.clear();
   if (a3_getMove(&move) == 1) {
+    // send while expecting to continue collecting moves
     lcd.setCursor(0, 1);
     lcd.print("sending to AM");
     delay(3000);
   } else {
+    // send and report we are done collecting moves
     lcd.setCursor(0, 1);
     lcd.print("work done");
     delay(3000);
