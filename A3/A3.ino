@@ -107,7 +107,7 @@ int speed_pos = 0;
 Prints current move in a slot machine style on LCD.
 - Format -> G:F St:S Sp:M
 */
-void print_slotMachine(struct Move* move) {
+void print_slotMachine(struct Move* move, int changed) {
 
   lcd.setCursor(0, 0);
 
@@ -156,6 +156,22 @@ void print_slotMachine(struct Move* move) {
       break;
   }
 
+  // print ^ icon for which thing is being changed
+  lcd.setCursor(0,1);
+  switch(changed) {
+    case 1:
+      lcd.print("  ^");
+      break;
+    case 2:
+      lcd.print("       ^");
+      break;
+    case 3:
+      lcd.print("            ^");
+      break;
+    default:
+      break;
+  }
+
 }
 
 /* 
@@ -165,6 +181,8 @@ int a3_getMove(Move* new_move) {
 
   *new_move = {gas_arr[gas_pos], steer_arr[steer_pos], speed_arr[speed_pos]};
 
+  int changed = 1;
+
   int reading = 1;
 
   while (reading) {
@@ -173,14 +191,20 @@ int a3_getMove(Move* new_move) {
       // cycle gas
       gas_pos = (gas_pos + 1) % 2;
       new_move->gas = gas_arr[gas_pos];
+      changed = 1;
+      lcd.clear();
     } else if (button_get_input(&steer) == 1) {
       // cycle steer
       steer_pos = (steer_pos + 1) % 3;
       new_move->steer = steer_arr[steer_pos];
+      changed = 2;
+      lcd.clear();
     } else if (button_get_input(&speed) == 1) {
       // cycle speed
       speed_pos = (speed_pos + 1) % 3;
       new_move->speed = speed_arr[speed_pos];
+      changed = 3;
+      lcd.clear();
     } else if (button_get_input(&send) == 1) {
       // leave to send current move
       return 1;
@@ -189,7 +213,7 @@ int a3_getMove(Move* new_move) {
       return 0;
     }
 
-    print_slotMachine(new_move);
+    print_slotMachine(new_move, changed);
 
   }
 
