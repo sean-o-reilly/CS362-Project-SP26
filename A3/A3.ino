@@ -13,76 +13,76 @@
 using namespace pgc;
 
 // Button class for holding pin, state, and debounce variables.
-struct button {
+struct Button {
 
   int pin;
-  int curr_state;
-  int last_state;
-  int last_debounce;
+  int currState;
+  int lastState;
+  int lastDebounce;
 
-  button(int pin, int curr_state, int last_state, int last_debounce) {
+  Button(int pin) {
     this->pin = pin;
-    this->curr_state = curr_state;
-    this->last_state = last_state;
-    this->last_debounce = last_debounce;
+    this->currState = HIGH;
+    this->lastState = HIGH;
+    this->lastDebounce = 0;
   }
 
 };
 
 // Returns 1 if button has been pressed, else returns 0.
-int button_get_input(button* button) {
+int buttonGetInput(Button* button) {
 
   int reading = digitalRead(button->pin);
 
-  if (reading != button->last_state) {
-    button->last_debounce = millis();
+  if (reading != button->lastState) {
+    button->lastDebounce = millis();
   }
 
-  if ((millis() - button->last_debounce) > DEBOUNCE_DELAY) {
-    if (reading != button->curr_state) {
-      button->curr_state = reading;
-      if (button->curr_state == HIGH) {
-        button->last_state = reading;
+  if ((millis() - button->lastDebounce) > DEBOUNCE_DELAY) {
+    if (reading != button->currState) {
+      button->currState = reading;
+      if (button->currState == HIGH) {
+        button->lastState = reading;
         return 1;
       }
     }
   }
 
-  button->last_state = reading;
+  button->lastState = reading;
   return 0;
 
 }
 
 // button setup
-button gas(GAS_PIN, HIGH, HIGH, 0);
-button steer(STEER_PIN, HIGH, HIGH, 0);
-button speed(SPEED_PIN, HIGH, HIGH, 0);
-button send(SEND_PIN, HIGH, HIGH, 0);
-button execute(EXECUTE_PIN, HIGH, HIGH, 0);
+Button gas(GAS_PIN, HIGH, HIGH, 0);
+Button steer(STEER_PIN, HIGH, HIGH, 0);
+Button speed(SPEED_PIN, HIGH, HIGH, 0);
+Button send(SEND_PIN, HIGH, HIGH, 0);
+Button execute(EXECUTE_PIN, HIGH, HIGH, 0);
 
 // LCD setup
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // time variables
-unsigned long curr_millis, prev_millis = 0;
+unsigned long currMillis, prevMillis = 0;
 
 // array and position variables for cycling choices
-Gas gas_arr[2] = {Gas::FORWARD, Gas::REVERSE};
-int gas_pos = 0;
-SteerDir steer_arr[3] = {SteerDir::STRAIGHT, SteerDir::LEFT, SteerDir::RIGHT};
-int steer_pos = 0;
-Speed speed_arr[3] = {Speed::MEDIUM_SPEED, Speed::HIGH_SPEED, Speed::LOW_SPEED};
-int speed_pos = 0;
+Gas gasArr[2] = {Gas::FORWARD, Gas::REVERSE};
+int gasPos = 0;
+SteerDir steerArr[3] = {SteerDir::STRAIGHT, SteerDir::LEFT, SteerDir::RIGHT};
+int steerPos = 0;
+Speed speedArr[3] = {Speed::MEDIUM_SPEED, Speed::HIGH_SPEED, Speed::LOW_SPEED};
+int speedPos = 0;
 
 // amount of moves read
-unsigned int moves_amt = 0;
+unsigned int movesAmt = 0;
 
 /*
 Prints current move in a slot machine style on LCD.
 - Format -> G:F St:S Sp:M   X
 */
-void print_slotMachine(Move* move, int changed) {
+void printSlotMachine(Move* move, int changed) {
 
   lcd.setCursor(0, 0);
 
@@ -134,7 +134,7 @@ void print_slotMachine(Move* move, int changed) {
 
   // print amount of moves we have
   lcd.print("  ");
-  lcd.print(moves_amt);
+  lcd.print(movesAmt);
 
   // print ^ icon for which thing is being changed
   lcd.setCursor(0,1);
@@ -157,9 +157,9 @@ void print_slotMachine(Move* move, int changed) {
 /* 
 Main A3 do-work function. Returns 1 to continue collecting moves, else returns 0 if user wants less than 10 moves.
 */
-int a3_getMove(Move* new_move) {
+int a3GetMove(Move* newMove) {
 
-  *new_move = {gas_arr[gas_pos], steer_arr[steer_pos], speed_arr[speed_pos]};
+  *newMove = {gasArr[gasPos], steerArr[steerPos], speedArr[speedPos]};
 
   int changed = 1;
 
@@ -167,35 +167,35 @@ int a3_getMove(Move* new_move) {
 
   while (reading) {
 
-    if (button_get_input(&gas) == 1) {
+    if (buttonGetInput(&gas) == 1) {
       // cycle gas
-      gas_pos = (gas_pos + 1) % 2;
-      new_move->gas = gas_arr[gas_pos];
+      gasPos = (gasPos + 1) % 2;
+      newMove->gas = gasArr[gasPos];
       changed = 1;
       lcd.clear();
-    } else if (button_get_input(&steer) == 1) {
+    } else if (buttonGetInput(&steer) == 1) {
       // cycle steer
-      steer_pos = (steer_pos + 1) % 3;
-      new_move->steer = steer_arr[steer_pos];
+      steerPos = (steerPos + 1) % 3;
+      newMove->steer = steerArr[steerPos];
       changed = 2;
       lcd.clear();
-    } else if (button_get_input(&speed) == 1) {
+    } else if (buttonGetInput(&speed) == 1) {
       // cycle speed
-      speed_pos = (speed_pos + 1) % 3;
-      new_move->speed = speed_arr[speed_pos];
+      speedPos = (speedPos + 1) % 3;
+      newMove->speed = speedArr[speedPos];
       changed = 3;
       lcd.clear();
-    } else if (button_get_input(&send) == 1) {
+    } else if (buttonGetInput(&send) == 1) {
       // leave to send current move
       lcd.clear();
-      moves_amt++;
+      movesAmt++;
       return 1;
-    } else if (button_get_input(&execute) == 1) {
+    } else if (buttonGetInput(&execute) == 1) {
       // leave to send current move and report work done
       return 0;
     }
 
-    print_slotMachine(new_move, changed);
+    printSlotMachine(newMove, changed);
 
   }
 
@@ -203,24 +203,24 @@ int a3_getMove(Move* new_move) {
 
 void getMove() {
   
-  if (moves_amt < MAX_MOVES) {
+  if (movesAmt < MAX_MOVES) {
 
     Move move;
 
-    if (a3_getMove(&move) == 1) {
+    if (a3GetMove(&move) == 1) {
       // send a move and prepare to collect another
       reportToMaster(move);
-      moves_amt++;
+      movesAmt++;
     } else {
       // tell AM we are done collecting moves
       reportToMaster(pgc::WORK_DONE);
-      moves_amt = 0;
+      movesAmt = 0;
     }
 
   } else {
 
     reportToMaster(pgc::WORK_DONE);
-    moves_amt = 0;
+    movesAmt = 0;
 
   }
 
@@ -245,8 +245,8 @@ void loop() {
   handleMovesRequest(getMove);
 
   // debug code
-  //if (moves_amt < MAX_MOVES) {
+  //if (movesAmt < MAX_MOVES) {
     //Move move;
-    //a3_getMove(&move);
+    //a3GetMove(&move);
   //}
 }
