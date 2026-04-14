@@ -54,11 +54,11 @@ int buttonGetInput(Button* button) {
 }
 
 // button setup
-Button gas(GAS_PIN, HIGH, HIGH, 0);
-Button steer(STEER_PIN, HIGH, HIGH, 0);
-Button speed(SPEED_PIN, HIGH, HIGH, 0);
-Button send(SEND_PIN, HIGH, HIGH, 0);
-Button execute(EXECUTE_PIN, HIGH, HIGH, 0);
+Button gas(GAS_PIN);
+Button steer(STEER_PIN);
+Button speed(SPEED_PIN);
+Button send(SEND_PIN);
+Button execute(EXECUTE_PIN);
 
 // LCD setup
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
