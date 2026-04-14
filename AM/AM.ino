@@ -4,6 +4,8 @@ using namespace pgc;
 
 void setup() {
   initAM();
+  pinMode(LED_BUILTIN, OUTPUT);
+  while (!Serial);
 }
 
 void loop() {
@@ -22,8 +24,10 @@ void loop() {
     Serial.print(", ");
     Serial.print(static_cast<int>(m.speed));
     Serial.println();
+  }
 
-    broadcastMove(move);
+  for (int i = 0; i < movesRecv; ++i) {
+    broadcastMove(moves[i]);
     waitForMoveToFinish();
   }
 
@@ -32,20 +36,18 @@ void loop() {
 
 void broadcastMove(const Move& move) {
   byte a2Message[MESSAGE_SIZE] = { RUN_COMMAND, static_cast<byte>(move.steer), 0, 0 };
-  byte a3Message[MESSAGE_SIZE] = { RUN_COMMAND, static_cast<byte>(move.gas), static_cast<byte>(move.speed), 0 };
+  byte a1Message[MESSAGE_SIZE] = { RUN_COMMAND, static_cast<byte>(move.gas), static_cast<byte>(move.speed), 0 };
 
   Wire.beginTransmission(A2_ADDRESS);
   Wire.write(a2Message, MESSAGE_SIZE);
   Wire.endTransmission();
 
-  Wire.beginTransmission(A3_ADDRESS);
-  Wire.write(a3Message, MESSAGE_SIZE);
+  Wire.beginTransmission(A1_ADDRESS);
+  Wire.write(a1Message, MESSAGE_SIZE);
   Wire.endTransmission();
 }
 
 void waitForMoveToFinish() {
-  byte response[MESSAGE_SIZE];
-
   bool a1Done = false;
   bool a2Done = false;
 
@@ -63,7 +65,7 @@ void waitForMoveToFinish() {
     }
 
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    delay(200);
+    delay(400);
   }
 }
 

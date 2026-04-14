@@ -30,9 +30,9 @@ namespace pgc
 
     enum class SteerDir : byte
     {
-        LEFT,
-        STRAIGHT,
-        RIGHT
+        LEFT = 45,
+        STRAIGHT = 90,
+        RIGHT = 135
     };
 
     enum class Speed : byte
@@ -123,9 +123,19 @@ namespace pgc
     {
         if (slaveCommandShouldRun) {
             clearSlaveResponse();
+
+            Serial.println("Running Steer Command");
+
             SteerDir steerDir = static_cast<SteerDir>(masterCommandBuffer[1]);
             func(steerDir);
+
             slaveResponseReady = true;
+            Serial.println("Response Ready");
+        }
+        else
+        {
+            Serial.print("Waiting for Command. Response Ready = ");
+            Serial.println(slaveResponseReady);
         }
     }
 
@@ -133,10 +143,19 @@ namespace pgc
     {
         if (slaveCommandShouldRun) {
             clearSlaveResponse();
+            
+            Serial.println("Running Drive Command");
+
             Gas gas = static_cast<Gas>(masterCommandBuffer[1]);
             Speed speed = static_cast<Speed>(masterCommandBuffer[2]);
             func(gas, speed);
+
             slaveResponseReady = true;
+            Serial.println("Response Ready");
+        }
+        {
+            Serial.print("Waiting for Command. Response Ready = ");
+            Serial.println(slaveResponseReady);
         }
     }
 
