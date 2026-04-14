@@ -12,15 +12,13 @@ namespace pgc
     constexpr int MAX_MOVES = 10;
 
     constexpr int MESSAGE_SIZE = 4;
-
-    byte masterCommandBuffer[MESSAGE_SIZE];
     byte slaveResponseBuffer[MESSAGE_SIZE];
 
-    /* Protocol send and response codes */
+    /* Protocol response codes */
+    constexpr byte RUN_COMMAND = 1;
+    constexpr byte WORK_DONE = 0xEE;
+    constexpr byte NOT_READY = 0xFF;
     constexpr byte NULL_RESPONSE = 0x00;
-    constexpr byte RUN_COMMAND = 0x01;
-    constexpr byte WORK_DONE = 0x02;
-    constexpr byte NOT_READY = 0x04;
 
     enum class Gas : byte 
     {
@@ -30,9 +28,9 @@ namespace pgc
 
     enum class SteerDir : byte
     {
-        LEFT = 45,
-        STRAIGHT = 90,
-        RIGHT = 135
+        LEFT,
+        STRAIGHT,
+        RIGHT
     };
 
     enum class Speed : byte
@@ -48,8 +46,6 @@ namespace pgc
         SteerDir steer;
         Speed speed;
     };
-
-    static_assert(sizeof(Move) <= MESSAGE_SIZE);
     
     void reportToMaster(const Move& move)
     {
@@ -72,19 +68,16 @@ namespace pgc
         bool slaveResponseReady = false;
         bool slaveCommandShouldRun = false;
 
-        /* Called when slave receives a command from master */
+        /* Called when master sends slave a command to execute */
         void onSlaveCommandRecv(int bytesRecv) {
-            if (bytesRecv < MESSAGE_SIZE)
+            if (bytesRecv <= 0)
                 return;
 
-            if (!slaveResponseReady) // Only carry out command if a response isn't currently in progress
+            if (!slaveResponseReady) // Only carry out command if move isn't already ready
             {
-                masterCommandBuffer[0] = Wire.read();
-                masterCommandBuffer[1] = Wire.read();
-                masterCommandBuffer[2] = Wire.read();
-                masterCommandBuffer[3] = Wire.read();
+                byte command = Wire.read();
 
-                if (masterCommandBuffer[0] == RUN_COMMAND) {
+                if (command == RUN_COMMAND) {
                     slaveCommandShouldRun = true;
                 }
             }
@@ -93,69 +86,26 @@ namespace pgc
         /* Called when master requests a response from slave */
         void onSlaveResponseRequested() {
             if (slaveResponseReady) {
-                Wire.write(slaveResponseBuffer, MESSAGE_SIZE);
+                Wire.write(slaveResponseBuffer, sizeof(slaveResponseBuffer));
                 slaveResponseReady = false;
             } else {
                 byte notReady[MESSAGE_SIZE] = {NOT_READY, NOT_READY, NOT_READY, NOT_READY};   
                 Wire.write(notReady, MESSAGE_SIZE);
             }
         }
+    }
 
-        void clearSlaveResponse() {
+    /* Will call func if master has requested slave to run */
+    void runSlaveCommand(void (*func)())
+    {
+        if (slaveCommandShouldRun) {
             slaveCommandShouldRun = false;
             for (int i = 0; i < MESSAGE_SIZE; ++i)
             {
                 slaveResponseBuffer[i] = NULL_RESPONSE;
             }
-        }
-    }
-
-    void handleMovesRequest(void (*func)())
-    {
-        if (slaveCommandShouldRun) {
-            clearSlaveResponse();
             func();
             slaveResponseReady = true;
-        }
-    }
-
-    void handleSteerCommand(void (*func)(SteerDir steerDir))
-    {
-        if (slaveCommandShouldRun) {
-            clearSlaveResponse();
-
-            Serial.println("Running Steer Command");
-
-            SteerDir steerDir = static_cast<SteerDir>(masterCommandBuffer[1]);
-            func(steerDir);
-
-            slaveResponseReady = true;
-            Serial.println("Response Ready");
-        }
-        else
-        {
-            Serial.print("Waiting for Command. Response Ready = ");
-            Serial.println(slaveResponseReady);
-        }
-    }
-
-    void handleDriveCommand(void (*func)(Gas gas, Speed speed))
-    {
-        if (slaveCommandShouldRun) {
-            clearSlaveResponse();
-            
-            Serial.println("Running Drive Command");
-
-            Gas gas = static_cast<Gas>(masterCommandBuffer[1]);
-            Speed speed = static_cast<Speed>(masterCommandBuffer[2]);
-            func(gas, speed);
-
-            slaveResponseReady = true;
-            Serial.println("Response Ready");
-        }
-        {
-            Serial.print("Waiting for Command. Response Ready = ");
-            Serial.println(slaveResponseReady);
         }
     }
 
