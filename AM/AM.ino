@@ -4,6 +4,8 @@ using namespace pgc;
 
 void setup() {
   initAM();
+  pinMode(LED_BUILTIN, OUTPUT);
+  while (!Serial);
 }
 
 void loop() {
@@ -24,14 +26,55 @@ void loop() {
     Serial.println();
   }
 
+  for (int i = 0; i < movesRecv; ++i) {
+    broadcastMove(moves[i]);
+    waitForMoveToFinish();
+  }
+
   delay(2000);
+}
+
+void broadcastMove(const Move& move) {
+  byte a2Message[MESSAGE_SIZE] = { RUN_COMMAND, static_cast<byte>(move.steer), 0, 0 };
+  byte a1Message[MESSAGE_SIZE] = { RUN_COMMAND, static_cast<byte>(move.gas), static_cast<byte>(move.speed), 0 };
+
+  Wire.beginTransmission(A2_ADDRESS);
+  Wire.write(a2Message, MESSAGE_SIZE);
+  Wire.endTransmission();
+
+  Wire.beginTransmission(A1_ADDRESS);
+  Wire.write(a1Message, MESSAGE_SIZE);
+  Wire.endTransmission();
+}
+
+void waitForMoveToFinish() {
+  bool a1Done = false;
+  bool a2Done = false;
+
+  while (!a1Done || !a2Done) {
+    Wire.requestFrom(A1_ADDRESS, MESSAGE_SIZE);
+
+    if (Wire.available() >= MESSAGE_SIZE && Wire.read() == WORK_DONE) {
+      a1Done = true;
+    }
+
+    Wire.requestFrom(A2_ADDRESS, MESSAGE_SIZE);
+
+    if (Wire.available() >= MESSAGE_SIZE && Wire.read() == WORK_DONE) {
+      a2Done = true;
+    }
+
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    delay(400);
+  }
 }
 
 void getMoveFromA3(Move moves[], int& movesRecv, bool& done) {
   Serial.println("Requesting move from A3...");
 
   Wire.beginTransmission(A3_ADDRESS);
-  Wire.write(RUN_COMMAND);
+  byte msg[MESSAGE_SIZE] = { RUN_COMMAND, 0, 0, 0 };
+  Wire.write(msg, MESSAGE_SIZE);
   Wire.endTransmission();
 
   byte response[MESSAGE_SIZE];

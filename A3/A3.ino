@@ -25,5 +25,5 @@ void getMove() {
 }
 
 void loop() {
-  runSlaveCommand(getMove);
+  handleMovesRequest(getMove);
 }
