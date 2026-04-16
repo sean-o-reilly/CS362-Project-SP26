@@ -30,25 +30,25 @@ struct Button {
 };
 
 // Returns 1 if button has been pressed, else returns 0.
-int buttonGetInput(Button* button) {
+int buttonGetInput(Button& button) {
 
-  int reading = digitalRead(button->pin);
+  int reading = digitalRead(button.pin);
 
-  if (reading != button->lastState) {
-    button->lastDebounce = millis();
+  if (reading != button.lastState) {
+    button.lastDebounce = millis();
   }
 
-  if ((millis() - button->lastDebounce) > DEBOUNCE_DELAY) {
-    if (reading != button->currState) {
-      button->currState = reading;
-      if (button->currState == HIGH) {
-        button->lastState = reading;
+  if ((millis() - button.lastDebounce) > DEBOUNCE_DELAY) {
+    if (reading != button.currState) {
+      button.currState = reading;
+      if (button.currState == HIGH) {
+        button.lastState = reading;
         return 1;
       }
     }
   }
 
-  button->lastState = reading;
+  button.lastState = reading;
   return 0;
 
 }
@@ -82,14 +82,14 @@ unsigned int movesAmt = 0;
 Prints current move in a slot machine style on LCD.
 - Format -> G:F St:S Sp:M   X
 */
-void printSlotMachine(Move* move, int changed) {
+void printSlotMachine(Move& move, int changed) {
 
   lcd.setCursor(0, 0);
 
   // print choice slots
   lcd.print("G:");
 
-  switch (move->gas) {
+  switch (move.gas) {
     case Gas::FORWARD:
       lcd.print("F");
       break;
@@ -102,7 +102,7 @@ void printSlotMachine(Move* move, int changed) {
 
   lcd.print(" St:");
 
-  switch (move->steer) {
+  switch (move.steer) {
     case SteerDir::LEFT:
       lcd.print("L");
       break;
@@ -118,7 +118,7 @@ void printSlotMachine(Move* move, int changed) {
 
   lcd.print(" Sp:");
 
-  switch (move->speed) {
+  switch (move.speed) {
     case Speed::LOW_SPEED:
       lcd.print("L");
       break;
@@ -157,40 +157,38 @@ void printSlotMachine(Move* move, int changed) {
 /* 
 Main A3 do-work function. Returns 1 to continue collecting moves, else returns 0 if user wants less than 10 moves.
 */
-int a3GetMove(Move* newMove) {
+int a3GetMove(Move& newMove) {
 
-  *newMove = {gasArr[gasPos], steerArr[steerPos], speedArr[speedPos]};
+  newMove = {gasArr[gasPos], steerArr[steerPos], speedArr[speedPos]};
 
   int changed = 1;
 
-  int reading = 1;
+  while (true) {
 
-  while (reading) {
-
-    if (buttonGetInput(&gas) == 1) {
+    if (buttonGetInput(gas) == 1) {
       // cycle gas
       gasPos = (gasPos + 1) % 2;
-      newMove->gas = gasArr[gasPos];
+      newMove.gas = gasArr[gasPos];
       changed = 1;
       lcd.clear();
-    } else if (buttonGetInput(&steer) == 1) {
+    } else if (buttonGetInput(steer) == 1) {
       // cycle steer
       steerPos = (steerPos + 1) % 3;
-      newMove->steer = steerArr[steerPos];
+      newMove.steer = steerArr[steerPos];
       changed = 2;
       lcd.clear();
-    } else if (buttonGetInput(&speed) == 1) {
+    } else if (buttonGetInput(speed) == 1) {
       // cycle speed
       speedPos = (speedPos + 1) % 3;
-      newMove->speed = speedArr[speedPos];
+      newMove.speed = speedArr[speedPos];
       changed = 3;
       lcd.clear();
-    } else if (buttonGetInput(&send) == 1) {
+    } else if (buttonGetInput(send) == 1) {
       // leave to send current move
       lcd.clear();
       movesAmt++;
       return 1;
-    } else if (buttonGetInput(&execute) == 1) {
+    } else if (buttonGetInput(execute) == 1) {
       // leave to send current move and report work done
       return 0;
     }
@@ -207,7 +205,7 @@ void getMove() {
 
     Move move;
 
-    if (a3GetMove(&move) == 1) {
+    if (a3GetMove(move) == 1) {
       // send a move and prepare to collect another
       reportToMaster(move);
       movesAmt++;
