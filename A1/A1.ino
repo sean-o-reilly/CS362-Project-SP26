@@ -30,7 +30,8 @@ bool isPathBlocked() {
   digitalWrite(TRIG_PIN, LOW);
   
   long duration = pulseIn(ECHO_PIN, HIGH);
-  int distance = duration * 0.034 / 2;
+  const int soundSpeed = 0.034
+   int distance = duration * soundSpeed / 2;
 
   if (distance > 0 && distance < OBSTACLE_THRESHOLD) {
     digitalWrite(BUZZER_PIN, HIGH);
@@ -62,12 +63,13 @@ void runDriveCommand(Gas gas, Speed speed) {
   }
 
   // check sensor frequently
-  for (int i = 0; i < travelSteps; i += 10) {
+  const int STEPS = 10
+  for (int i = 0; i < travelSteps; i += STEPS) {
     if (isPathBlocked()) {
       Serial.println("Obstacle detected.");
       break; 
     }
-    driveMotor.step(10 * direction);
+    driveMotor.step(STEPS * direction);
   }
 
   reportToMaster(WORK_DONE);
@@ -76,7 +78,6 @@ void runDriveCommand(Gas gas, Speed speed) {
 void loop() {
   // check for commands
   handleDriveCommand(runDriveCommand);
-  
   
   digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
   delay(100);
