@@ -239,12 +239,5 @@ void setup() {
 }
 
 void loop() {
-  // live code
   handleMovesRequest(getMove);
-
-  // debug code
-  //if (movesAmt < MAX_MOVES) {
-    //Move move;
-    //a3GetMove(&move);
-  //}
 }
