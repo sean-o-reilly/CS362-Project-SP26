@@ -30,8 +30,8 @@ bool isPathBlocked() {
   digitalWrite(TRIG_PIN, LOW);
   
   long duration = pulseIn(ECHO_PIN, HIGH);
-  const int soundSpeed = 0.034
-   int distance = duration * soundSpeed / 2;
+  const int SOUND_SPEED = 0.034
+   int distance = duration * SOUND_SPEED / 2;
 
   if (distance > 0 && distance < OBSTACLE_THRESHOLD) {
     digitalWrite(BUZZER_PIN, HIGH);
