@@ -26,6 +26,7 @@ between each call to write().
 */
 void spinServo(int finalAngle) {
   for (int pos = servo.read(); pos < finalAngle; pos++) {
+    currTime = millis();
     if ((currTime - prevTime) > timeInterval) {
       servo.write(pos);
       prevTime = currTime;
