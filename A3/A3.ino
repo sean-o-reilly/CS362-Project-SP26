@@ -158,9 +158,9 @@ void printSlotMachine(Move& move, int changed) {
 }
 
 /* 
-Main A3 do-work function. Returns 1 to continue collecting moves, else returns 0 if user wants less than 10 moves.
+Main A3 do-work function. Returns true to continue collecting moves, else returns false if user wants less than 10 moves.
 */
-int a3GetMove(Move& newMove) {
+bool a3GetMove(Move& newMove) {
 
   newMove = {gasArr[gasPos], steerArr[steerPos], speedArr[speedPos]};
 
@@ -191,11 +191,11 @@ int a3GetMove(Move& newMove) {
     } else if (buttonGetInput(send) == 1) {
       // leave to send current move
       lcd.clear();
-      return 1;
+      return true;
     } else if (buttonGetInput(execute) == 1) {
       // leave to send current move and report work done
       digitalWrite(LED_PIN, LOW);
-      return 0;
+      return false;
     }
 
     printSlotMachine(newMove, changed);
@@ -210,7 +210,7 @@ void getMove() {
 
     Move move;
 
-    if (a3GetMove(move) == 1) {
+    if (a3GetMove(move) == true) {
       // send a move and prepare to collect another
       reportToMaster(move);
       movesAmt++;
