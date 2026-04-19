@@ -5,13 +5,12 @@ using namespace pgc;
 
 // Stepper configuration
 const int STEPS_PER_REV = 2048;
-Stepper leftMotor(STEPS_PER_REV, 2, 4, 3, 5);  // IN1, IN3, IN2, IN4
-Stepper rightMotor(STEPS_PER_REV, 6, 7, 8, 9);
+Stepper driveMotor(STEPS_PER_REV, 2, 4, 3, 5);  // IN1, IN3, IN2, IN4
 
 // Sensor Pins
-const int TRIG_PIN = 10;
-const int ECHO_PIN = 11;
-const int BUZZER_PIN = 12;
+const int TRIG_PIN = 6;
+const int ECHO_PIN = 7;
+const int BUZZER_PIN = 10;
 const int OBSTACLE_THRESHOLD = 10;
 
 void setup() {
@@ -59,17 +58,12 @@ void runDriveCommand(Gas gas, Speed speed) {
     motorSpeed = 15;
   }
 
-  leftMotor.setSpeed(motorSpeed);
-  rightMotor.setSpeed(motorSpeed);
-  // motor directions are opposites since they are positioned
-  // with shafts facing outwards from eachother.
-  int leftDirection, rightDirection;
+  driveMotor.setSpeed(motorSpeed);
+  int direction;
   if (gas == Gas::FORWARD) {
-    leftDirection = 1;
-    rightDirection = -1;
+    direction = 1;
   } else {
-    leftDirection = -1;
-    rightDirection = 1;
+    direction = -1;
   }
 
   // check sensor frequently
@@ -82,8 +76,7 @@ void runDriveCommand(Gas gas, Speed speed) {
       digitalWrite(BUZZER_PIN, LOW);
       return;
     }
-    leftMotor.step(STEPS * leftDirection);
-    rightMotor.step(STEPS * rightDirection)
+    driveMotor.step(STEPS * direction);
   }
 
   reportToMaster(WORK_DONE);
