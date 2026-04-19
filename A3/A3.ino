@@ -2,11 +2,14 @@
 
 #include "ProgCar.h"
 
-#define GAS_PIN 7
-#define STEER_PIN 8
-#define SPEED_PIN 9
-#define SEND_PIN 10
-#define EXECUTE_PIN 13
+#define GAS_PIN 6
+#define STEER_PIN 7
+#define SPEED_PIN 8
+#define SEND_PIN 9
+#define EXECUTE_PIN 10
+
+// LED lights up when A3 is taking input, turns off when sleeping
+#define LED_PIN 13
 
 #define DEBOUNCE_DELAY 50
 
@@ -163,6 +166,8 @@ int a3GetMove(Move& newMove) {
 
   int changed = 1;
 
+  digitalWrite(LED_PIN, HIGH);
+
   while (true) {
 
     if (buttonGetInput(gas) == 1) {
@@ -186,10 +191,10 @@ int a3GetMove(Move& newMove) {
     } else if (buttonGetInput(send) == 1) {
       // leave to send current move
       lcd.clear();
-      movesAmt++;
       return 1;
     } else if (buttonGetInput(execute) == 1) {
       // leave to send current move and report work done
+      digitalWrite(LED_PIN, LOW);
       return 0;
     }
 
@@ -233,6 +238,9 @@ void setup() {
   pinMode(speed.pin, INPUT_PULLUP);
   pinMode(send.pin, INPUT_PULLUP);
   pinMode(execute.pin, INPUT_PULLUP);
+
+  // LED setup
+  pinMode(LED_PIN, OUTPUT);
 
   // LCD setup
   lcd.begin(16, 2);
