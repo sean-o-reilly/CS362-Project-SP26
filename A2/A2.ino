@@ -15,29 +15,57 @@ unsigned long timeInterval = 15;
 void setup() {
   initSlave(A2_ADDRESS);
   pinMode(LED_BUILTIN, OUTPUT);
+  // attach() sends signal to servo motor to center itself at 90 degrees
+  // hence the fast spin in the beginning
   servo.attach(SERVO_PIN);
   Serial.begin(BAUD_RATE);
 }
 
 /*
-Spins servo motor from its current position to the desired angle at a custom speed.
-In order to reduce jitter and inconsistent spinning, there is custom delay logic
-between each call to write().
+Rotates in the direction of 0 degrees -> 180 degrees.
 */
-void spinServo(int finalAngle) {
-  for (int pos = servo.read(); pos < finalAngle; pos++) {
+void rotateLeft(int finalAngle) {
+  int pos = servo.read();
+  while (pos <= finalAngle) {
     currTime = millis();
     if ((currTime - prevTime) > timeInterval) {
       servo.write(pos);
       prevTime = currTime;
+      pos++;
     }
+  }
+}
+
+/*
+Rotates in the direction of 180 degrees -> 0 degrees.
+*/
+void rotateRight(int finalAngle) {
+  int pos = servo.read();
+  while (pos >= finalAngle) {
+    currTime = millis();
+    if ((currTime - prevTime) > timeInterval) {
+      servo.write(pos);
+      prevTime = currTime;
+      pos--;
+    }
+  }
+}
+
+/*
+Rotates left or right based on if finalAngle is greater/less than current position.
+*/
+void rotateServo(int finalAngle) {
+  if (finalAngle > servo.read()) {
+  	rotateLeft(finalAngle);
+  } else {
+  	rotateRight(finalAngle);
   }
 }
 
 void runSteerCommand(SteerDir steerDir) {
   int angle = static_cast<int>(steerDir);
   Serial.println(angle);
-  spinServo(angle);
+  rotateServo(angle);
   reportToMaster(WORK_DONE);
 }
 
