@@ -21,6 +21,7 @@ namespace pgc
     constexpr byte RUN_COMMAND = 0x01;
     constexpr byte WORK_DONE = 0x02;
     constexpr byte NOT_READY = 0x04;
+    constexpr byte OBSTACLE_ERROR = 0x08;
 
     enum class Gas : byte 
     {

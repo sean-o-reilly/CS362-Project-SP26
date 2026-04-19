@@ -5,7 +5,8 @@ using namespace pgc;
 void setup() {
   initAM();
   pinMode(LED_BUILTIN, OUTPUT);
-  while (!Serial);
+  while (!Serial)
+    ;
 }
 
 void loop() {
@@ -28,13 +29,19 @@ void loop() {
 
   for (int i = 0; i < movesRecv; ++i) {
     broadcastMove(moves[i]);
-    waitForMoveToFinish();
+    bool recvError = false;
+    waitForMoveToFinish(recvError);
+    if (recvError) {
+      Serial.println("Error received! Ending move sequence.");
+      break;
+    }
   }
 
   delay(2000);
 }
 
 void broadcastMove(const Move& move) {
+  Serial.println("Broadcasting move");
   byte a2Message[MESSAGE_SIZE] = { RUN_COMMAND, static_cast<byte>(move.steer), 0, 0 };
   byte a1Message[MESSAGE_SIZE] = { RUN_COMMAND, static_cast<byte>(move.gas), static_cast<byte>(move.speed), 0 };
 
@@ -47,15 +54,23 @@ void broadcastMove(const Move& move) {
   Wire.endTransmission();
 }
 
-void waitForMoveToFinish() {
+void waitForMoveToFinish(bool& recvError) {
   bool a1Done = false;
   bool a2Done = false;
 
   while (!a1Done || !a2Done) {
     Wire.requestFrom(A1_ADDRESS, MESSAGE_SIZE);
 
-    if (Wire.available() >= MESSAGE_SIZE && Wire.read() == WORK_DONE) {
-      a1Done = true;
+    if (Wire.available() >= MESSAGE_SIZE) {
+      const byte a1Response = Wire.read();
+
+      if (a1Response == WORK_DONE) {
+        a1Done = true;
+      } else if (a1Response == OBSTACLE_ERROR) {
+        Serial.println("Obstacle error received!");
+        a1Done = true;
+        recvError = true;
+      }
     }
 
     Wire.requestFrom(A2_ADDRESS, MESSAGE_SIZE);
@@ -66,7 +81,18 @@ void waitForMoveToFinish() {
 
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     delay(400);
+    Serial.print("Waiting for: ");
+
+    if (!a1Done)
+      Serial.print("A1 ");
+
+    if (!a2Done)
+      Serial.print("A2 ");
+
+    Serial.println();
   }
+
+  Serial.println("Done waiting - Move finished");
 }
 
 void getMoveFromA3(Move moves[], int& movesRecv, bool& done) {
@@ -108,6 +134,7 @@ void getMoveFromA3(Move moves[], int& movesRecv, bool& done) {
     Serial.print("Move received: ");
     for (int i = 0; i < MESSAGE_SIZE; ++i) {
       Serial.print(response[i]);
+      Serial.print(" ");
     }
 
     moves[movesRecv++] = Move{ static_cast<Gas>(response[0]), static_cast<SteerDir>(response[1]), static_cast<Speed>(response[2]) };
