@@ -9,8 +9,8 @@ constexpr int SERVO_PIN = 9;
 
 // variables for delay between each call to write()
 // for slower spinning, set timeInterval to a higher value
-unsigned long currTime, prevTime = 0;
-unsigned long timeInterval = 15;
+unsigned long currTime = 0, prevTime = 0;
+constexpr unsigned long timeInterval = 15;
 
 void setup() {
   initSlave(A2_ADDRESS);
