@@ -22,43 +22,17 @@ void setup() {
 }
 
 /*
-Rotates in the direction of 0 degrees -> 180 degrees.
+Rotates servo's current position to the finalAngle. Allows for leftward and rightward rotation.
 */
-void rotateLeft(int finalAngle) {
-  int pos = servo.read();
-  while (pos <= finalAngle) {
+void rotateServo(const int finalAngle) {
+  int posOffset = (servo.read() < finalAngle) ? 1 : -1;
+
+  while (servo.read() != finalAngle) {
     currTime = millis();
     if ((currTime - prevTime) > timeInterval) {
-      servo.write(pos);
+      servo.write(servo.read() + posOffset);
       prevTime = currTime;
-      pos++;
     }
-  }
-}
-
-/*
-Rotates in the direction of 180 degrees -> 0 degrees.
-*/
-void rotateRight(int finalAngle) {
-  int pos = servo.read();
-  while (pos >= finalAngle) {
-    currTime = millis();
-    if ((currTime - prevTime) > timeInterval) {
-      servo.write(pos);
-      prevTime = currTime;
-      pos--;
-    }
-  }
-}
-
-/*
-Rotates left or right based on if finalAngle is greater/less than current position.
-*/
-void rotateServo(int finalAngle) {
-  if (finalAngle > servo.read()) {
-  	rotateLeft(finalAngle);
-  } else {
-  	rotateRight(finalAngle);
   }
 }
 
