@@ -1,62 +1,59 @@
+#include <Servo.h>
 #include "ProgCar.h"
-#include <Servo.h> 
 
 using namespace pgc;
 
-//  Hardware Setup
-Servo steeringServo;
-const int SERVO_PIN = 3; 
-// Steering Angles
-const int ANGLE_LEFT = 45;
-const int ANGLE_STRAIGHT = 90;
-const int ANGLE_RIGHT = 135;
+Servo servo;
 
-//  Execution Function
-void executeSteering() {
-  SteerDir currentDir = SteerDir::STRAIGHT; 
+constexpr int SERVO_PIN = 9;
 
-  // Read the payload sent by the Master
-  if (Wire.available()) {
-    currentDir = static_cast<SteerDir>(Wire.read());
+// Servo timing variables
+unsigned long currTime = 0, prevTime = 0;
+constexpr unsigned long timeInterval = 75;
+
+// LED timing variables
+unsigned long prevLedTime = 0;
+constexpr unsigned long ledInterval = 100;
+
+void setup() {
+  initSlave(A2_ADDRESS);
+  pinMode(LED_BUILTIN, OUTPUT);
+  // attach() sends signal to servo motor to center itself at 90 degrees
+  // hence the fast spin in the beginning
+  servo.attach(SERVO_PIN);
+  Serial.begin(BAUD_RATE);
+}
+
+/*
+Rotates servo's current position to the finalAngle. Allows for leftward and rightward rotation.
+*/
+void rotateServo(const int finalAngle) {
+  int posOffset = (servo.read() < finalAngle) ? 1 : -1;
+
+  while (servo.read() != finalAngle) {
+    currTime = millis();
+    if ((currTime - prevTime) >= timeInterval) {
+      servo.write(servo.read() + posOffset);
+      prevTime = currTime;
+    }
   }
+}
 
-  // Command the servo (this triggers the hardware timer, no blocking required)
-  switch (currentDir) {
-    case SteerDir::LEFT:
-      steeringServo.write(ANGLE_LEFT);
-      Serial.println("Action: Commanded LEFT");
-      break;
-    case SteerDir::RIGHT:
-      steeringServo.write(ANGLE_RIGHT);
-      Serial.println("Action: Commanded RIGHT");
-      break;
-    case SteerDir::STRAIGHT:
-    default:
-      steeringServo.write(ANGLE_STRAIGHT);
-      Serial.println("Action: Commanded STRAIGHT");
-      break;
-  }
-
-  // Immediately report success. 
-  // The servo will physically travel to its position in the background
-  // while the Master is freed up to immediately trigger the Drive Arduino (A1).
+void runSteerCommand(SteerDir steerDir) {
+  int angle = static_cast<int>(steerDir);
+  Serial.println(angle);
+  rotateServo(angle);
   reportToMaster(WORK_DONE);
 }
 
-void setup() {
-  Serial.begin(BAUD_RATE);
-  
-  // Initialize this Arduino as Slave A2
-  initSlave(A2_ADDRESS);
-
-  // Attach the servo and set it to straight by default
-  steeringServo.attach(SERVO_PIN);
-  steeringServo.write(ANGLE_STRAIGHT);
-  
-  Serial.println("A2 Steering Arduino Initialized (Non-Blocking).");
-}
-
 void loop() {
-  // Checks for commands and runs executeSteering instantly when triggered
-  runSlaveCommand(executeSteering);
+  // Run command handler constantly without blocking
+  handleSteerCommand(runSteerCommand);
+
+  // Toggle LED non-blockingly every 100ms
+  unsigned long currentMillis = millis();
+  if (currentMillis - prevLedTime >= ledInterval) {
+    prevLedTime = currentMillis; 
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  }
 }
