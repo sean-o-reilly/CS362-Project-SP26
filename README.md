@@ -2,7 +2,7 @@
 
 # Programmable Car using 4 Arduino UNOs
 
-<img src="assets/demo.gif" width="300" height="200" />
+<img src="assets/demo.gif" width="500" height="750" />
 <img src="docs/photos/final_build1.png" width="300" height="200" />
 <img src="docs/photos/final_build2.png" width="300" height="200" />
 
