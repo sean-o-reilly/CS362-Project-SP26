@@ -7,10 +7,12 @@
 This project is a programmable LEGO toy car that follows a path set by a user. Utilizing an onboard interface, users input up to ten directional moves via buttons and select speeds using a potentiometer. Inside, four Arduinos work together using our own custom serial communication protocol built over Arduino’s Wire library. One Arduino acts as the main brain, while the others control the driving, steering, and input handling. The car also has an ultrasonic sensor to avoid crashing into obstacles. Overall, it is an original project that shows how multiple Arduinos can connect and share tasks.
 
 <p align="center">
-    <tr>
-      <td><img src="docs/photos/final_build1.png" alt="Image 1" width="400"></td>
-      <td><img src="docs/photos/final_build2.png" alt="Image 2" width="400"></td>
-    </tr>
+<td>
+  <img src="docs/photos/final_build1.png" style="width:400px; height:400px; object-fit:cover;">
+</td>
+<td>
+  <img src="docs/photos/final_build_in_progress.png" style="width:400px; height:400px; object-fit:cover;">
+</td>
   </p>
 
 # How The Project is Used
