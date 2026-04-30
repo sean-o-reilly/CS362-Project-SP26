@@ -22,3 +22,4 @@ The user will interact with the A3 input Arduino’s controls to change the spee
 
 Once the user wants to run the sequence of directions they entered into the car, they can hit a button to send the car off. The car will execute a sequence of commands using its motors to go forward, backward and steer around, and will stop if it reaches an obstacle. Once the car has finished driving, the user can repeat the process and add in new directions for the car to drive with.
 
+For a deeper dive into the system architecture and design decisions, see our [official design document](docs/milestones/milestone9.pdf).
